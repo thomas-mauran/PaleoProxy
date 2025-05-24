@@ -11,33 +11,45 @@ import (
 )
 
 func main(){
+	domain := "localhost"
 	fmt.Println("Proxy is running on port 8080")
 
 	config, err := ReadConfig("./config.yaml")
     fmt.Printf("%#v %#v", config, err)
 
 	services := config.Services
+
+	handlers := map[string]http.HandlerFunc{}
+	// We make a map for all our routes creating handlers
 	for _, service := range services {
-		fmt.Printf("sevices:::::::::::::::::: %#v", service.Description)
+		if !service.Enabled {
+			continue
+		}
+		// name := service.Name
+		port := service.Port
+		subdomain := service.Subdomain + "." + domain + ":" + fmt.Sprint(port)
+		description := service.Description
 
 		handler := func (w http.ResponseWriter, req *http.Request){
-			io.WriteString(w, service.Description + ": " + service.Description)
+			io.WriteString(w, description + ": " + description)
+		}
+		handlers[subdomain] = handler
+	}
+
+
+	// Each time we get a request we check if the domain matches to route the traffic to it
+	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		host := req.Host
+
+		if handler, found := handlers[host]; found {
+			handler(w, req)
+			return
 		}
 
-		http.HandleFunc("/" + service.Name, handler)
-	}
+		fmt.Println("New request received: \n", req) // Write the logs in a file
+	})
 
-
-	helloHandler := func(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "Hello, world!\n")
-		fmt.Println("New request", req)
-	}
-
-	http.HandleFunc("/hello", helloHandler)
-
-
-
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", mainHandler))
 }
 
 type Conf struct {
@@ -48,7 +60,7 @@ type Service struct {
 	Name string `yaml:"name"`
 	Description string `yaml:"description"`
 	Enabled bool `yaml:"enabled"`
-	Url string `yaml:"url"`
+	Subdomain string `yaml:"subdomain"`
 	Ip string `yaml:"ip"`
 	Port int64 `yaml:"port"`
 }

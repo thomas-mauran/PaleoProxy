@@ -1,15 +1,25 @@
 services:
 # This is a sample configuration file for services
-- name: "example_service"
+- name: "service1"
   # Description of the service
-  description: "An example service configuration"
+  description: "This is the first service configuration"
   # If the service is enabled
   enabled: true
   # Url to access the service
-  url: "demo.localhost"
+  subdomain: "demo"
   # Actual IP address for the service
   ip: "192.168.1.43"
   # Actual Port number for the service
   port: 8080
 
-test: "hello"
+- name: "service2"
+  # Description of the service
+  description: "This is the second service configuration"
+  # If the service is enabled
+  enabled: true
+  # Url to access the service
+  subdomain: "demo2"
+  # Actual IP address for the service
+  ip: "192.168.1.43"
+  # Actual Port number for the service
+  port: 8080
