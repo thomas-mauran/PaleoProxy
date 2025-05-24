@@ -5,6 +5,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/go-yaml/yaml"
 )
 
 func main(){
@@ -17,5 +20,38 @@ func main(){
 
 	http.HandleFunc("/hello", helloHandler)
 
+	config, err := ReadConfig("./config.yaml")
+
+    fmt.Printf("%#v %#v", config, err)
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+type Conf struct {
+	Services []Service `yaml:"services"`
+}
+
+type Service struct {
+	Name string `yaml:"name"`
+	Description string `yaml:"description"`
+	Enabled bool `yaml:"enabled"`
+	Url string `yaml:"url"`
+	Ip string `yaml:"ip"`
+	Port int64 `yaml:"port"`
+}
+
+func ReadConfig(filename string) (*Conf, error){
+	buf, err := os.ReadFile(filename)
+
+	if err != nil {
+		return nil, err
+	}
+
+	c := &Conf{}
+	err = yaml.Unmarshal(buf, c)
+
+	if err != nil {
+		return nil, fmt.Errorf("in file %q: %w", filename, err)
+	}
+	return c, err
 }
