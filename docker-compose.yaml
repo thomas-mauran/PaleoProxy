@@ -2,16 +2,29 @@ services:
   whoami:
     image: traefik/whoami
     command:
-        # It tells whoami to start listening on 2001 instead of 80
-        - --name=iamfoo
+        - --name=whoami-service
         - --port=8080
     networks:
-    - vpcbr
+    - net-whoami
+
+  echo:
+    image: hashicorp/http-echo
+    command:
+        - -text=Hello
+        - -listen=:8080
+    networks:
+    - net-echo
 
 networks:
-  vpcbr:
+  net-whoami:
     driver: bridge
     ipam:
      config:
        - subnet: 10.5.0.0/16
          gateway: 10.5.0.1
+  net-echo:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.6.0.0/16
+         gateway: 10.6.0.1

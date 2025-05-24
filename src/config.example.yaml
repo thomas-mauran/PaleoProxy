@@ -1,0 +1,24 @@
+services:
+# This is a sample configuration file for services
+- name: "Whoami Service"
+  # Description of the service
+  description: "This is the whoami service"
+  # If the service is enabled
+  enabled: true
+  # Url to access the service
+  subdomain: "whoami"
+  endpoints:
+  - ip: "10.5.0.2"
+  - ip: "10.5.0.3"
+  - ip: "10.5.0.4"
+  - ip: "10.5.0.5"
+  - ip: "10.5.0.6"
+  port: 8080
+
+- name: "Echo Service"
+  description: "This is the echo service"
+  enabled: true
+  subdomain: "echo"
+  endpoints:
+  - ip: "10.6.0.2"
+  port: 8080

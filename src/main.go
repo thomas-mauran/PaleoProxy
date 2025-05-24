@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,9 +14,24 @@ import (
 
 func main(){
 	domain := "localhost"
-	fmt.Println("Proxy is running on port 8080")
 
-	config, err := ReadConfig("./config.yaml")
+	fmt.Println("len", len(os.Args))
+
+	if len(os.Args) < 2 {
+		fmt.Println("Missing the config file path ! ./paleoproxy /path/to/the/config")
+		return
+	}
+
+    configFilePath := os.Args[1]
+
+	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
+		fmt.Println("Missing the config file path ! ./paleoproxy /path/to/the/config")
+		return
+	}
+
+	fmt.Println("Paleo Proxy is up !")
+
+	config, err := ReadConfig(configFilePath)
     fmt.Printf("%#v %#v", config, err)
 
 	services := config.Services
