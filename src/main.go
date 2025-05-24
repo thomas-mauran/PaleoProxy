@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 
@@ -25,22 +26,35 @@ func main(){
 		if !service.Enabled {
 			continue
 		}
-		// name := service.Name
 		port := service.Port
-		subdomain := service.Subdomain + "." + domain + ":" + fmt.Sprint(port)
-		ip := service.Ip
-		service := ip + ":" + fmt.Sprint(port)
-		// description := service.Description
 
+		// Subdomain of the current service
+		subdomain := service.Subdomain + "." + domain + ":" + fmt.Sprint(port)
+
+		// Function to handle the passing of the request to the service
 		handler := func (w http.ResponseWriter, req *http.Request){
-			res , err := http.Get("http://" + service)
-			fmt.Println("SENDING THE REQUEST TO" + service)
+			// Endpoints 
+			endpoints := service.Endpoints
+
+			// Pick a random endpoint
+			randomEndpoint := endpoints[rand.Intn(len(endpoints))]
+
+			// Ip and port of the service we chose
+			ip := randomEndpoint.Ip
+
+			// The url of the service to contact
+			serviceUrl := "http://" + ip + ":" + fmt.Sprint(port)
+			
+			res , err := http.Get(serviceUrl)
+			fmt.Println("SENDING THE REQUEST TO" + serviceUrl)
 			if err != nil {
-				io.WriteString(w, "[ERROR], an error occured when trying to reach GET" + service)
+				io.WriteString(w, "[ERROR], an error occured when trying to reach GET" + serviceUrl)
 			}
+
 			body, err := io.ReadAll(res.Body)
+
 			if err != nil {
-				io.WriteString(w, "[ERROR], failed to read response body from "+service)
+				io.WriteString(w, "[ERROR], failed to read response body from "+ serviceUrl)
 				return
 			}
 			w.Write(body)
@@ -73,8 +87,12 @@ type Service struct {
 	Description string `yaml:"description"`
 	Enabled bool `yaml:"enabled"`
 	Subdomain string `yaml:"subdomain"`
-	Ip string `yaml:"ip"`
+	Endpoints []Endpoint `yaml:"endpoints"`
 	Port int64 `yaml:"port"`
+}
+
+type Endpoint struct {
+	Ip string `yaml:"ip"`
 }
 
 func ReadConfig(filename string) (*Conf, error){
@@ -92,3 +110,5 @@ func ReadConfig(filename string) (*Conf, error){
 	}
 	return c, err
 }
+
+// func PingService()
