@@ -28,10 +28,22 @@ func main(){
 		// name := service.Name
 		port := service.Port
 		subdomain := service.Subdomain + "." + domain + ":" + fmt.Sprint(port)
-		description := service.Description
+		ip := service.Ip
+		service := ip + ":" + fmt.Sprint(port)
+		// description := service.Description
 
 		handler := func (w http.ResponseWriter, req *http.Request){
-			io.WriteString(w, description + ": " + description)
+			res , err := http.Get("http://" + service)
+			fmt.Println("SENDING THE REQUEST TO" + service)
+			if err != nil {
+				io.WriteString(w, "[ERROR], an error occured when trying to reach GET" + service)
+			}
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				io.WriteString(w, "[ERROR], failed to read response body from "+service)
+				return
+			}
+			w.Write(body)
 		}
 		handlers[subdomain] = handler
 	}
