@@ -8,12 +8,11 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"time"
 )
 
 func main(){
 	domain := "localhost"
-
-	fmt.Println("len", len(os.Args))
 
 	if len(os.Args) < 2 {
 		fmt.Println("Missing the config file path ! ./paleoproxy /path/to/the/config")
@@ -27,16 +26,26 @@ func main(){
 		return
 	}
 
+	// Setup log file
+	logfileName := "logs/" + fmt.Sprint(time.Now().Unix()) + ".log"
+	logfile, err := os.OpenFile(logfileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer logfile.Close()
+	log.SetOutput(logfile)
+
+
 	fmt.Println("Paleo Proxy is up !")
 
 	config, err := ReadConfig(configFilePath)
-    fmt.Printf("%#v %#v", config, err)
 
 	services := config.Services
 
 	handlers := map[string]http.HandlerFunc{}
 	// We make a map for all our routes creating handlers
-	for _, service := range services {
+	for _, s := range services {
+		service := s
 		if !service.Enabled {
 			continue
 		}
@@ -60,10 +69,11 @@ func main(){
 			serviceUrl := "http://" + ip + ":" + fmt.Sprint(port)
 			
 			res , err := http.Get(serviceUrl)
-			fmt.Println("SENDING THE REQUEST TO" + serviceUrl)
+			log.Println("routing request to: " + serviceUrl)
 			if err != nil {
 				io.WriteString(w, "[ERROR], an error occured when trying to reach GET" + serviceUrl)
 			}
+			defer res.Body.Close()
 
 			body, err := io.ReadAll(res.Body)
 
@@ -85,8 +95,6 @@ func main(){
 			handler(w, req)
 			return
 		}
-
-		fmt.Println("New request received: \n", req) // Write the logs in a file
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", mainHandler))
