@@ -22,6 +22,7 @@
 - Simple and readable YAML-based service configuration
 - Subdomain-based request routing
 - Randomized load balancing across multiple endpoints
+- Access logging for each request
 - Docker Compose setup for a quick local demo
 
 ---
