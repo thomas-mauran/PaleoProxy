@@ -11,7 +11,22 @@ import (
 )
 
 func main(){
-	fmt.Println("Hello World")
+	fmt.Println("Proxy is running on port 8080")
+
+	config, err := ReadConfig("./config.yaml")
+    fmt.Printf("%#v %#v", config, err)
+
+	services := config.Services
+	for _, service := range services {
+		fmt.Printf("sevices:::::::::::::::::: %#v", service.Description)
+
+		handler := func (w http.ResponseWriter, req *http.Request){
+			io.WriteString(w, service.Description + ": " + service.Description)
+		}
+
+		http.HandleFunc("/" + service.Name, handler)
+	}
+
 
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!\n")
@@ -20,9 +35,7 @@ func main(){
 
 	http.HandleFunc("/hello", helloHandler)
 
-	config, err := ReadConfig("./config.yaml")
 
-    fmt.Printf("%#v %#v", config, err)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
