@@ -7,13 +7,25 @@ services:
     networks:
     - net-whoami
 
-  echo:
+  # echo:
+  #   image: hashicorp/http-echo
+  #   command:
+  #       - -text=Hello
+  #       - -listen=:8080
+  #   networks:
+  #   - net-echo
+
+  echo-with-labels:
     image: hashicorp/http-echo
     command:
         - -text=Hello
         - -listen=:8080
+    labels:
+      - "paleo-subdomain=echo-with-label"
     networks:
     - net-echo
+
+
 
 networks:
   net-whoami:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -9,14 +10,22 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/client"
 )
 
 func main(){
+	isDynamic := false
 	domain := "localhost"
 
 	if len(os.Args) < 2 {
 		fmt.Println("Missing the config file path ! ./paleoproxy /path/to/the/config")
 		return
+	}
+
+	if len(os.Args) == 3 && os.Args[2] == "dynamic" {
+		isDynamic = true
 	}
 
     configFilePath := os.Args[1]
@@ -38,7 +47,14 @@ func main(){
 
 	fmt.Println("Paleo Proxy is up !")
 
+	if !isDynamic {
+
 	config, err := ReadConfig(configFilePath)
+
+	if err != nil {
+		fmt.Println("An error occured when trying to read the config file: ", err)
+		return
+	}
 
 	services := config.Services
 
@@ -98,4 +114,36 @@ func main(){
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", mainHandler))
+	} else {
+		fmt.Println("hey this is dynamic !")
+
+		cli, err := client.NewClientWithOpts(client.FromEnv)
+		if err != nil {
+			panic(err)
+		}
+
+		eventChannel, errChannel := cli.Events(context.Background(), events.ListOptions{})
+
+		for {
+			select {
+			case event := <-eventChannel:
+				// for key, value := range event.Actor.Attributes {
+				// 	fmt.Printf("%s: %s\n", key, value)
+				// }			
+				_, gotPaleoLabel := event.Actor.Attributes["paleo-subdomain"]
+
+				if event.Action == "start" && gotPaleoLabel {
+					fmt.Println("start", event.Action)
+				} else if event.Action == "kill" && gotPaleoLabel {
+					fmt.Println("kill", event.Action)
+				}
+
+			case err := <-errChannel:
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
+
 }
