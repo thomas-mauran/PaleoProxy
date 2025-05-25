@@ -21,7 +21,7 @@ services:
         - -text=Hello
         - -listen=:8080
     labels:
-      - "paleo-subdomain=echo-with-label"
+      - "paleo-subdomain=echo-dynamic"
     networks:
     - net-echo
 
