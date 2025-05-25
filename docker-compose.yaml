@@ -7,23 +7,23 @@ services:
     networks:
     - net-whoami
 
-  # echo:
-  #   image: hashicorp/http-echo
-  #   command:
-  #       - -text=Hello
-  #       - -listen=:8080
-  #   networks:
-  #   - net-echo
-
-  echo-with-labels:
+  echo:
     image: hashicorp/http-echo
     command:
         - -text=Hello
         - -listen=:8080
-    labels:
-      - "paleo-subdomain=echo-dynamic"
     networks:
     - net-echo
+
+  whoami-dynamic:
+    image: traefik/whoami
+    command:
+        - --name=whoami-DYNAMIC-service
+        - --port=8080
+    labels:
+      - "paleo-subdomain=whoami-dynamic"
+    networks:
+    - net-whoami-dynamic
 
 
 
@@ -40,3 +40,9 @@ networks:
      config:
        - subnet: 10.6.0.0/16
          gateway: 10.6.0.1
+  net-whoami-dynamic:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.7.0.0/16
+         gateway: 10.7.0.1

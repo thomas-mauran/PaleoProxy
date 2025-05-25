@@ -45,9 +45,6 @@ func main(){
 	defer logfile.Close()
 	log.SetOutput(logfile)
 
-
-	fmt.Println("Paleo Proxy is up !")
-
 	if !isDynamic {
 		// Not dynamic, using the config file
 		config, err := ReadConfig(configFilePath)
@@ -74,6 +71,8 @@ func main(){
 			handlers[subdomain] = CreateHandler(service)
 		}
 
+		fmt.Println("Paleo Proxy (config mode) is up !")
+
 		// Each time we get a request we check if the domain matches to route the traffic to it
 		mainHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			host := req.Host
@@ -86,14 +85,12 @@ func main(){
 
 		log.Fatal(http.ListenAndServe(":8080", mainHandler))
 	} else {
-		// Crea
+		// Handling the dynamic mode !
 		var (
 			handlers = make(map[string]http.HandlerFunc)
 			handlersMu sync.RWMutex
 		)
 		// Dynamic config, listening to docker events
-		fmt.Println("hey this is dynamic !")
-
 		cli, err := client.NewClientWithOpts(client.FromEnv)
 		if err != nil {
 			panic(err)
@@ -101,9 +98,10 @@ func main(){
 
 		eventChannel, errChannel := cli.Events(context.Background(), events.ListOptions{})
 
-
 		// We start the infinite event listener loop with a gorouting 
 		go DynamicListen(cli, eventChannel, errChannel, handlers, &handlersMu, domain)
+
+		fmt.Println("Paleo Proxy (dynamic mode) is up !")
 
 		mainHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			host := req.Host
@@ -112,11 +110,7 @@ func main(){
 			handler, found := handlers[host]
 			handlersMu.RUnlock()
 
-			for k := range handlers {
-				fmt.Println(" -", k)
-			}			
 			if found {
-				fmt.Println("FOUNNNDNDNDNDND")
 				handler(w, req)
 			} else {
 				http.NotFound(w, req)
@@ -124,7 +118,6 @@ func main(){
 		})
 		log.Fatal(http.ListenAndServe(":8080", mainHandler))
 	}
-	
 }
 
 // Method to loop infinitely on the docker events and add handlers to the map for events with the paleo-subdomain label
@@ -146,6 +139,7 @@ func DynamicListen(cli *client.Client, eventChannel <- chan events.Message, errC
 				}
 
 				// Get the first network's IP address ! This might be a bad idea in the end idk how it works with multiple networks
+				// Right now we don't handle multiple services, we shall refactor 
 				var ipAddress string
 				for _, netSettings := range containerJSON.NetworkSettings.Networks {
 					ipAddress = netSettings.IPAddress
@@ -180,6 +174,7 @@ func DynamicListen(cli *client.Client, eventChannel <- chan events.Message, errC
 	}
 }
 
+// This method creates the http handle methods
 func CreateHandler(service Service) http.HandlerFunc {
 	// Function to handle the passing of the request to the service
 	return func (w http.ResponseWriter, req *http.Request){
