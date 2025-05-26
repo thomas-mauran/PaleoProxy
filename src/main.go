@@ -129,9 +129,11 @@ func DynamicListen(cli *client.Client, eventChannel <- chan events.Message, errC
 			if !gotPaleoLabel {
 				continue
 			}
-			fmt.Println("new event")
 			if event.Action == "start" && gotPaleoLabel {
 				containerID := event.ID
+
+				fmt.Println("Received a new docker start event for the following docker container id", containerID)
+
 				containerJSON, err := cli.ContainerInspect(context.Background(), containerID)
 				if err != nil {
 					log.Printf("Failed to inspect container %s: %v", containerID, err)
@@ -163,7 +165,13 @@ func DynamicListen(cli *client.Client, eventChannel <- chan events.Message, errC
 
 				log.Printf("Added handler for %s\n", subdomain)
 			} else if event.Action == "kill" && gotPaleoLabel {
-				fmt.Println("kill", event.Action)
+				containerID := event.ID
+
+				handlersMu.Lock()
+				delete(handlers, subdomain + "." + domain + ":8080")
+				fmt.Println("Received a new docker stop event for the following docker container id", containerID)
+				fmt.Println("removing the following service handler: ", subdomain + "." + domain + ":8080")
+				handlersMu.Unlock()
 			}
 
 		case err := <-errChannel:
@@ -186,8 +194,6 @@ func CreateHandler(service Service) http.HandlerFunc {
 
 		// Ip and port of the service we chose
 		ip := randomEndpoint.Ip
-
-		fmt.Println("ip", ip)
 
 		// The url of the service to contact
 		serviceUrl := "http://" + ip + ":" + fmt.Sprint(service.Port)
